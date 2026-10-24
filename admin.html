@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-  <title>MoveFlow | Ù„ÙˆØ­Ø© Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©</title>
+  <title>MoveFlow | لوحة الإدارة</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -27,31 +27,31 @@
           <div class="w-12 h-12 rounded-2xl bg-brand-600 flex items-center justify-center"><i class="fa-solid fa-bus-simple"></i></div>
           <div>
             <h2 class="text-xl font-black">MoveFlow</h2>
-            <p class="text-xs text-slate-400">Ù„ÙˆØ­Ø© Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©</p>
+            <p class="text-xs text-slate-400">لوحة الإدارة</p>
           </div>
         </div>
       </div>
       <nav class="p-4 space-y-2">
-        <a href="#" class="block rounded-xl bg-brand-600/15 text-white px-4 py-3 font-bold border border-brand-500/20">Ù„ÙˆØ­Ø© Ø§Ù„Ù‚ÙŠØ§Ø¯Ø©</a>
-        <a href="#" class="block rounded-xl text-slate-300 hover:bg-white/5 px-4 py-3 font-semibold">Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø±Ø­Ù„Ø§Øª</a>
-        <a href="#" class="block rounded-xl text-slate-300 hover:bg-white/5 px-4 py-3 font-semibold">Ø§Ù„Ø·Ù„Ø§Ø¨ ÙˆØ§Ù„Ø­Ø¬ÙˆØ²Ø§Øª</a>
-        <a href="#" class="block rounded-xl text-slate-300 hover:bg-white/5 px-4 py-3 font-semibold">Ø§Ù„Ø£ØªÙˆØ¨ÙŠØ³Ø§Øª</a>
-        <a href="#" class="block rounded-xl text-slate-300 hover:bg-white/5 px-4 py-3 font-semibold">Ø§Ù„Ø³Ø§Ø¦Ù‚ÙŠÙ†</a>
+        <a href="#" class="block rounded-xl bg-brand-600/15 text-white px-4 py-3 font-bold border border-brand-500/20">لوحة القيادة</a>
+        <a href="#" class="block rounded-xl text-slate-300 hover:bg-white/5 px-4 py-3 font-semibold">إدارة الرحلات</a>
+        <a href="#" class="block rounded-xl text-slate-300 hover:bg-white/5 px-4 py-3 font-semibold">الطلاب والحجوزات</a>
+        <a href="#" class="block rounded-xl text-slate-300 hover:bg-white/5 px-4 py-3 font-semibold">الأتوبيسات</a>
+        <a href="#" class="block rounded-xl text-slate-300 hover:bg-white/5 px-4 py-3 font-semibold">السائقين</a>
       </nav>
       <div class="p-4 mt-auto border-t border-white/10">
-        <button id="logout-button" type="button" class="w-full rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-200 hover:text-red-400 py-3 font-bold transition-all">ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø®Ø±ÙˆØ¬</button>
+        <button id="logout-button" type="button" class="w-full rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-200 hover:text-red-400 py-3 font-bold transition-all">تسجيل الخروج</button>
       </div>
     </aside>
 
     <main class="flex-1">
       <header class="bg-white border-b border-slate-200 px-8 py-5 flex justify-between items-center">
         <div>
-          <h1 class="text-2xl font-black text-slate-900">Ù„ÙˆØ­Ø© Ø§Ù„Ù‚ÙŠØ§Ø¯Ø©</h1>
-          <p class="text-sm text-slate-500">Ù†Ø¸Ø±Ø© Ø¹Ø§Ù…Ø© Ø¹Ù„Ù‰ Ø§Ù„Ø¹Ù…Ù„ÙŠØ§Øª Ø§Ù„ÙŠÙˆÙ…ÙŠØ©</p>
+          <h1 class="text-2xl font-black text-slate-900">لوحة القيادة</h1>
+          <p class="text-sm text-slate-500">نظرة عامة على العمليات اليومية</p>
         </div>
         <div class="flex items-center gap-3">
           <div class="relative">
-            <input type="text" placeholder="Ø¨Ø­Ø« Ø³Ø±ÙŠØ¹" class="bg-slate-100 rounded-xl px-4 py-2.5 pr-10 text-sm outline-none ring-0 w-64" />
+            <input type="text" placeholder="بحث سريع" class="bg-slate-100 rounded-xl px-4 py-2.5 pr-10 text-sm outline-none ring-0 w-64" />
             <i class="fa-solid fa-magnifying-glass absolute right-3 top-3 text-slate-400"></i>
           </div>
         </div>
@@ -60,46 +60,46 @@
       <div class="p-6 md:p-8">
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
           <div class="metric-card relative bg-white rounded-2xl p-5 shadow-soft border border-slate-100">
-            <p class="text-sm font-bold text-slate-500 mb-2">Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø­Ø¬ÙˆØ²Ø§Øª</p>
+            <p class="text-sm font-bold text-slate-500 mb-2">إجمالي الحجوزات</p>
             <h3 id="stat-bookings" class="text-3xl font-black">0</h3>
           </div>
           <div class="metric-card relative bg-white rounded-2xl p-5 shadow-soft border border-slate-100">
-            <p class="text-sm font-bold text-slate-500 mb-2">Ø¹Ø¯Ø¯ Ø§Ù„Ø£ØªÙˆØ¨ÙŠØ³Ø§Øª</p>
+            <p class="text-sm font-bold text-slate-500 mb-2">عدد الأتوبيسات</p>
             <h3 id="stat-buses" class="text-3xl font-black">0</h3>
           </div>
           <div class="metric-card relative bg-white rounded-2xl p-5 shadow-soft border border-slate-100">
-            <p class="text-sm font-bold text-slate-500 mb-2">Ø±Ø­Ù„Ø§Øª Ø§Ù„ÙŠÙˆÙ…</p>
+            <p class="text-sm font-bold text-slate-500 mb-2">رحلات اليوم</p>
             <h3 id="stat-trips" class="text-3xl font-black">0</h3>
           </div>
           <div class="metric-card relative bg-white rounded-2xl p-5 shadow-soft border border-slate-100">
-            <p class="text-sm font-bold text-slate-500 mb-2">Ø§Ù„Ø³Ø¹Ø© Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠØ©</p>
+            <p class="text-sm font-bold text-slate-500 mb-2">السعة الإجمالية</p>
             <h3 id="stat-capacity" class="text-3xl font-black">0</h3>
           </div>
         </div>
 
         <div class="bg-white rounded-3xl border border-slate-200 shadow-soft p-5 mb-8">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-black text-slate-900">Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„ØªØ´ØºÙŠÙ„</h2>
-            <button type="button" class="bg-brand-600 text-white px-4 py-2 rounded-xl font-bold">Ø¥Ø¶Ø§ÙØ© Ø±Ø­Ù„Ø© Ø¬Ø¯ÙŠØ¯Ø©</button>
+            <h2 class="text-xl font-black text-slate-900">إدارة التشغيل</h2>
+            <button type="button" class="bg-brand-600 text-white px-4 py-2 rounded-xl font-bold">إضافة رحلة جديدة</button>
           </div>
           <div class="form-grid">
             <label class="block">
-              <span class="block text-sm font-bold mb-2 text-slate-700">Ø§Ø³Ù… Ø§Ù„Ø±Ø­Ù„Ø©</span>
-              <input class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3" value="Ø±Ø­Ù„Ø© Ø¬Ø§Ù…Ø¹Ø© Ø§Ù„Ù†ÙŠÙ„" />
+              <span class="block text-sm font-bold mb-2 text-slate-700">اسم الرحلة</span>
+              <input class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3" value="رحلة جامعة النيل" />
             </label>
             <label class="block">
-              <span class="block text-sm font-bold mb-2 text-slate-700">Ø§Ù„Ø§ØªØ¬Ø§Ù‡</span>
+              <span class="block text-sm font-bold mb-2 text-slate-700">الاتجاه</span>
               <select class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <option>Ø°Ù‡Ø§Ø¨</option>
-                <option>Ø¹ÙˆØ¯Ø©</option>
+                <option>ذهاب</option>
+                <option>عودة</option>
               </select>
             </label>
             <label class="block">
-              <span class="block text-sm font-bold mb-2 text-slate-700">Ø§Ù„ÙˆÙ‚Øª</span>
+              <span class="block text-sm font-bold mb-2 text-slate-700">الوقت</span>
               <input class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3" value="08:00" />
             </label>
             <label class="block">
-              <span class="block text-sm font-bold mb-2 text-slate-700">Ø§Ù„Ø³Ø¹Ø©</span>
+              <span class="block text-sm font-bold mb-2 text-slate-700">السعة</span>
               <input class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3" value="40" />
             </label>
           </div>
@@ -107,20 +107,20 @@
 
         <div class="bg-white rounded-3xl border border-slate-200 shadow-soft overflow-hidden">
           <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-            <h2 class="text-xl font-black text-slate-900">Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø±Ø­Ù„Ø§Øª</h2>
-            <span class="text-sm text-slate-500">Ø¢Ø®Ø± ØªØ­Ø¯ÙŠØ«: Ø§Ù„ÙŠÙˆÙ…</span>
+            <h2 class="text-xl font-black text-slate-900">قائمة الرحلات</h2>
+            <span class="text-sm text-slate-500">آخر تحديث: اليوم</span>
           </div>
           <div class="table-scroll">
             <table class="min-w-full text-sm">
               <thead class="bg-slate-50 text-slate-700">
                 <tr>
                   <th class="px-4 py-3 text-right">#</th>
-                  <th class="px-4 py-3 text-right">Ø§Ø³Ù… Ø§Ù„Ø±Ø­Ù„Ø©</th>
-                  <th class="px-4 py-3 text-right">Ø§Ù„Ø§ØªØ¬Ø§Ù‡</th>
-                  <th class="px-4 py-3 text-right">Ø§Ù„ÙˆÙ‚Øª</th>
-                  <th class="px-4 py-3 text-right">Ø§Ù„Ø­Ø¬ÙˆØ²Ø§Øª</th>
-                  <th class="px-4 py-3 text-right">Ø§Ù„ØªÙ‚Ø¯Ù…</th>
-                  <th class="px-4 py-3 text-right">Ø§Ù„Ø­Ø§Ù„Ø©</th>
+                  <th class="px-4 py-3 text-right">اسم الرحلة</th>
+                  <th class="px-4 py-3 text-right">الاتجاه</th>
+                  <th class="px-4 py-3 text-right">الوقت</th>
+                  <th class="px-4 py-3 text-right">الحجوزات</th>
+                  <th class="px-4 py-3 text-right">التقدم</th>
+                  <th class="px-4 py-3 text-right">الحالة</th>
                 </tr>
               </thead>
               <tbody id="admin-trips-table-body"></tbody>
