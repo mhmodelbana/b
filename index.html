@@ -1,0 +1,110 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MoveFlow | نظام النقل الجامعي</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><script src="https://cdn.tailwindcss.com"></script><script>tailwind.config = { theme: { extend: { colors: { brand: { 50: "#eef2ff", 100: "#e0e7ff", 200: "#c7d2fe", 300: "#a5b4fc", 400: "#818cf8", 500: "#6366f1", 600: "#4f46e5", 700: "#4338ca", 800: "#3730a3", 900: "#312e81", 950: "#1e1b4b" }, accent: { 500: "#f59e0b", 600: "#d97706" } }, boxShadow: { soft: "0 10px 40px -10px rgba(0,0,0,0.08)", glow: "0 0 20px rgba(99, 102, 241, 0.4)" } } } };</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./config.js"></script>
+  <link rel="stylesheet" href="./assets/styles.css">
+  <script src="./assets/app.js" defer></script>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div id="toast-container" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 w-80"></div>
+
+  <div id="login-view" class="page-shell flex min-h-screen">
+    <div class="flex-1 flex items-center justify-center p-6 lg:p-12">
+      <div class="w-full max-w-xl bg-white rounded-[28px] shadow-soft border border-slate-200 p-6 md:p-10">
+        <div class="text-center mb-8">
+          <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 text-white text-2xl flex items-center justify-center shadow-glow mx-auto mb-4">
+            <i class="fa-solid fa-bus-simple"></i>
+          </div>
+          <h1 class="text-3xl font-black text-slate-900">مرحباً بك في <span class="text-brand-600">MoveFlow</span></h1>
+          <p class="text-slate-500 mt-3">المنصة الذكية لإدارة النقل الجامعي</p>
+        </div>
+
+        <div class="space-y-5">
+          <label class="block">
+            <span class="block text-sm font-bold mb-2 text-slate-700">رقم الهاتف أو الهوية</span>
+            <div class="relative">
+              <input id="login-identifier" type="tel" autocomplete="username" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-11" placeholder="أدخل رقم الهاتف المرتبط بحسابك" />
+              <i class="fa-regular fa-user absolute right-4 top-4 text-slate-400"></i>
+            </div>
+          </label>
+
+          <label class="block">
+            <span class="block text-sm font-bold mb-2 text-slate-700">كلمة المرور</span>
+            <div class="relative">
+              <input id="login-password" type="password" autocomplete="current-password" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-11" placeholder="أدخل كلمة المرور" />
+              <i class="fa-solid fa-lock absolute right-4 top-4 text-slate-400"></i>
+            </div>
+          </label>
+
+          <div class="flex items-center justify-between mt-2">
+            <label class="flex items-center gap-2 text-sm text-slate-600 font-medium">
+              <input type="checkbox" class="rounded accent-brand-600">
+              تذكرني
+            </label>
+            <a href="#" class="text-sm text-brand-600 font-bold">نسيت كلمة المرور؟</a>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+            <button type="button" data-role-login="student" class="bg-gradient-to-r from-brand-600 to-brand-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/30 hover:-translate-y-0.5 transition-all">دخول طالب</button>
+            <button type="button" data-role-login="admin" class="bg-slate-900 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-slate-900/20 hover:-translate-y-0.5 transition-all">دخول إدارة</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hidden lg:flex flex-1 bg-gradient-to-br from-brand-900 via-brand-800 to-brand-700 relative overflow-hidden items-center justify-center">
+      <div class="absolute -top-16 -right-10 w-72 h-72 rounded-full bg-white/10 blur-3xl"></div>
+      <div class="absolute -bottom-20 -left-10 w-80 h-80 rounded-full bg-accent-500/30 blur-3xl"></div>
+      <div class="relative text-white text-center px-12 max-w-xl">
+        <div class="bg-white/10 backdrop-blur-lg border border-white/20 rounded-[30px] p-8 shadow-2xl">
+          <h2 class="text-3xl font-black mb-4">إدارة أسطولك بذكاء</h2>
+          <p class="text-brand-100 leading-8 text-lg">حجوزات ذكية، توزيع فعلي، وأداء يومي يتتبع كل رحلة من بدايتها حتى الوصول.</p>
+          <div class="mt-8 flex justify-center gap-6 text-sm font-semibold text-brand-100">
+            <span><i class="fa-solid fa-circle-check text-emerald-400 ml-2"></i>حجز ذكي</span>
+            <span><i class="fa-solid fa-circle-check text-emerald-400 ml-2"></i>تتبع فوري</span>
+            <span><i class="fa-solid fa-circle-check text-emerald-400 ml-2"></i>تقارير دقيقة</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="student-view" class="hidden-view min-h-screen bg-slate-50">
+    <header class="glass-nav sticky top-0 z-40 px-6 py-4 flex justify-between items-center shadow-sm">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center"><i class="fa-solid fa-bus-simple"></i></div>
+        <div>
+          <h1 class="text-2xl font-black text-slate-900">Move<span class="text-brand-600">Flow</span></h1>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <button type="button" class="relative text-slate-500 hover:text-brand-600"><i class="fa-regular fa-bell text-xl"></i><span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full"></span></button>
+        <button id="logout-button" type="button" class="bg-slate-100 text-slate-700 rounded-xl px-4 py-2.5 font-bold">تسجيل الخروج</button>
+      </div>
+    </header>
+
+    <main class="p-6 md:p-8">
+      <div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <p class="text-sm font-bold text-brand-600">رحلات اليوم</p>
+          <h2 class="text-2xl font-black text-slate-900">الرحلات المتاحة للحجز</h2>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl px-4 py-2.5 shadow-sm flex items-center gap-3">
+          <i class="fa-solid fa-calendar text-brand-500"></i>
+          <span class="text-sm font-bold text-slate-600">اليوم، 25 أكتوبر 2026</span>
+        </div>
+      </div>
+
+      <div id="student-trips-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+    </main>
+  </div>
+</body>
+</html>

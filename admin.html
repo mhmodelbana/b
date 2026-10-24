@@ -1,0 +1,133 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MoveFlow | Ù„ÙˆØ­Ø© Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><script src="https://cdn.tailwindcss.com"></script><script>tailwind.config = { theme: { extend: { colors: { brand: { 50: "#eef2ff", 100: "#e0e7ff", 200: "#c7d2fe", 300: "#a5b4fc", 400: "#818cf8", 500: "#6366f1", 600: "#4f46e5", 700: "#4338ca", 800: "#3730a3", 900: "#312e81", 950: "#1e1b4b" }, accent: { 500: "#f59e0b", 600: "#d97706" } }, boxShadow: { soft: "0 10px 40px -10px rgba(0,0,0,0.08)", glow: "0 0 20px rgba(99, 102, 241, 0.4)" } } } };</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./config.js"></script>
+  <link rel="stylesheet" href="./assets/styles.css">
+  <script src="./assets/app.js" defer></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div id="toast-container" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 w-80"></div>
+
+  <div id="admin-view" class="flex min-h-screen">
+    <aside class="w-72 bg-slate-900 text-white shrink-0">
+      <div class="p-6 border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-brand-600 flex items-center justify-center"><i class="fa-solid fa-bus-simple"></i></div>
+          <div>
+            <h2 class="text-xl font-black">MoveFlow</h2>
+            <p class="text-xs text-slate-400">Ù„ÙˆØ­Ø© Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©</p>
+          </div>
+        </div>
+      </div>
+      <nav class="p-4 space-y-2">
+        <a href="#" class="block rounded-xl bg-brand-600/15 text-white px-4 py-3 font-bold border border-brand-500/20">Ù„ÙˆØ­Ø© Ø§Ù„Ù‚ÙŠØ§Ø¯Ø©</a>
+        <a href="#" class="block rounded-xl text-slate-300 hover:bg-white/5 px-4 py-3 font-semibold">Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø±Ø­Ù„Ø§Øª</a>
+        <a href="#" class="block rounded-xl text-slate-300 hover:bg-white/5 px-4 py-3 font-semibold">Ø§Ù„Ø·Ù„Ø§Ø¨ ÙˆØ§Ù„Ø­Ø¬ÙˆØ²Ø§Øª</a>
+        <a href="#" class="block rounded-xl text-slate-300 hover:bg-white/5 px-4 py-3 font-semibold">Ø§Ù„Ø£ØªÙˆØ¨ÙŠØ³Ø§Øª</a>
+        <a href="#" class="block rounded-xl text-slate-300 hover:bg-white/5 px-4 py-3 font-semibold">Ø§Ù„Ø³Ø§Ø¦Ù‚ÙŠÙ†</a>
+      </nav>
+      <div class="p-4 mt-auto border-t border-white/10">
+        <button id="logout-button" type="button" class="w-full rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-200 hover:text-red-400 py-3 font-bold transition-all">ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø®Ø±ÙˆØ¬</button>
+      </div>
+    </aside>
+
+    <main class="flex-1">
+      <header class="bg-white border-b border-slate-200 px-8 py-5 flex justify-between items-center">
+        <div>
+          <h1 class="text-2xl font-black text-slate-900">Ù„ÙˆØ­Ø© Ø§Ù„Ù‚ÙŠØ§Ø¯Ø©</h1>
+          <p class="text-sm text-slate-500">Ù†Ø¸Ø±Ø© Ø¹Ø§Ù…Ø© Ø¹Ù„Ù‰ Ø§Ù„Ø¹Ù…Ù„ÙŠØ§Øª Ø§Ù„ÙŠÙˆÙ…ÙŠØ©</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <input type="text" placeholder="Ø¨Ø­Ø« Ø³Ø±ÙŠØ¹" class="bg-slate-100 rounded-xl px-4 py-2.5 pr-10 text-sm outline-none ring-0 w-64" />
+            <i class="fa-solid fa-magnifying-glass absolute right-3 top-3 text-slate-400"></i>
+          </div>
+        </div>
+      </header>
+
+      <div class="p-6 md:p-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+          <div class="metric-card relative bg-white rounded-2xl p-5 shadow-soft border border-slate-100">
+            <p class="text-sm font-bold text-slate-500 mb-2">Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø­Ø¬ÙˆØ²Ø§Øª</p>
+            <h3 id="stat-bookings" class="text-3xl font-black">0</h3>
+          </div>
+          <div class="metric-card relative bg-white rounded-2xl p-5 shadow-soft border border-slate-100">
+            <p class="text-sm font-bold text-slate-500 mb-2">Ø¹Ø¯Ø¯ Ø§Ù„Ø£ØªÙˆØ¨ÙŠØ³Ø§Øª</p>
+            <h3 id="stat-buses" class="text-3xl font-black">0</h3>
+          </div>
+          <div class="metric-card relative bg-white rounded-2xl p-5 shadow-soft border border-slate-100">
+            <p class="text-sm font-bold text-slate-500 mb-2">Ø±Ø­Ù„Ø§Øª Ø§Ù„ÙŠÙˆÙ…</p>
+            <h3 id="stat-trips" class="text-3xl font-black">0</h3>
+          </div>
+          <div class="metric-card relative bg-white rounded-2xl p-5 shadow-soft border border-slate-100">
+            <p class="text-sm font-bold text-slate-500 mb-2">Ø§Ù„Ø³Ø¹Ø© Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠØ©</p>
+            <h3 id="stat-capacity" class="text-3xl font-black">0</h3>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-soft p-5 mb-8">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-black text-slate-900">Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„ØªØ´ØºÙŠÙ„</h2>
+            <button type="button" class="bg-brand-600 text-white px-4 py-2 rounded-xl font-bold">Ø¥Ø¶Ø§ÙØ© Ø±Ø­Ù„Ø© Ø¬Ø¯ÙŠØ¯Ø©</button>
+          </div>
+          <div class="form-grid">
+            <label class="block">
+              <span class="block text-sm font-bold mb-2 text-slate-700">Ø§Ø³Ù… Ø§Ù„Ø±Ø­Ù„Ø©</span>
+              <input class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3" value="Ø±Ø­Ù„Ø© Ø¬Ø§Ù…Ø¹Ø© Ø§Ù„Ù†ÙŠÙ„" />
+            </label>
+            <label class="block">
+              <span class="block text-sm font-bold mb-2 text-slate-700">Ø§Ù„Ø§ØªØ¬Ø§Ù‡</span>
+              <select class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <option>Ø°Ù‡Ø§Ø¨</option>
+                <option>Ø¹ÙˆØ¯Ø©</option>
+              </select>
+            </label>
+            <label class="block">
+              <span class="block text-sm font-bold mb-2 text-slate-700">Ø§Ù„ÙˆÙ‚Øª</span>
+              <input class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3" value="08:00" />
+            </label>
+            <label class="block">
+              <span class="block text-sm font-bold mb-2 text-slate-700">Ø§Ù„Ø³Ø¹Ø©</span>
+              <input class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3" value="40" />
+            </label>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-soft overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+            <h2 class="text-xl font-black text-slate-900">Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø±Ø­Ù„Ø§Øª</h2>
+            <span class="text-sm text-slate-500">Ø¢Ø®Ø± ØªØ­Ø¯ÙŠØ«: Ø§Ù„ÙŠÙˆÙ…</span>
+          </div>
+          <div class="table-scroll">
+            <table class="min-w-full text-sm">
+              <thead class="bg-slate-50 text-slate-700">
+                <tr>
+                  <th class="px-4 py-3 text-right">#</th>
+                  <th class="px-4 py-3 text-right">Ø§Ø³Ù… Ø§Ù„Ø±Ø­Ù„Ø©</th>
+                  <th class="px-4 py-3 text-right">Ø§Ù„Ø§ØªØ¬Ø§Ù‡</th>
+                  <th class="px-4 py-3 text-right">Ø§Ù„ÙˆÙ‚Øª</th>
+                  <th class="px-4 py-3 text-right">Ø§Ù„Ø­Ø¬ÙˆØ²Ø§Øª</th>
+                  <th class="px-4 py-3 text-right">Ø§Ù„ØªÙ‚Ø¯Ù…</th>
+                  <th class="px-4 py-3 text-right">Ø§Ù„Ø­Ø§Ù„Ø©</th>
+                </tr>
+              </thead>
+              <tbody id="admin-trips-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

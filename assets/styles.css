@@ -1,0 +1,104 @@
+:root {
+  --brand-50: #eef2ff;
+  --brand-100: #e0e7ff;
+  --brand-500: #6366f1;
+  --brand-600: #4f46e5;
+  --brand-700: #4338ca;
+  --brand-800: #3730a3;
+  --brand-900: #312e81;
+  --slate-50: #f8fafc;
+  --slate-200: #e2e8f0;
+  --slate-500: #64748b;
+  --slate-800: #1e293b;
+  --emerald-50: #ecfdf5;
+  --emerald-500: #10b981;
+  --amber-500: #f59e0b;
+  --red-500: #ef4444;
+  --red-50: #fef2f2;
+  --white: #ffffff;
+  --shadow-soft: 0 10px 40px -10px rgba(15, 23, 42, 0.08);
+}
+
+body {
+  font-family: 'Cairo', sans-serif;
+  background: #f8fafc;
+  color: var(--slate-800);
+}
+
+.hidden-view { display: none !important; }
+
+.glass-nav {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,0.3);
+}
+
+.trip-card {
+  transition: all .25s ease;
+}
+
+.trip-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px -20px rgba(15, 23, 42, 0.16);
+}
+
+.page-shell {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #eef2ff, #f8fafc 35%, #ffffff);
+}
+
+.toast-enter {
+  animation: slideInRight .35s ease forwards;
+}
+
+.toast-exit {
+  animation: fadeOutRight .35s ease forwards;
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(22px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeOutRight {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(22px); }
+}
+
+.metric-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 9999px;
+  background: var(--brand-500);
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 0.7rem;
+}
+
+.status-pill.success { background: rgba(16,185,129,0.1); color: #047857; }
+.status-pill.warning { background: rgba(245,158,11,0.12); color: #b45309; }
+.status-pill.danger { background: rgba(239,68,68,0.12); color: #b91c1c; }
+.status-pill.neutral { background: rgba(100,116,139,0.12); color: #334155; }
+
+.form-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+input, select, button, textarea {
+  font: inherit;
+}
