@@ -392,3 +392,201 @@ row lock, per-trip capacity check, and unique(trip_id, student_id) are enforced.
 create index if not exists idx_profiles_company_role on profiles(company_id, role);
 create index if not exists idx_trips_company_date on trips(company_id, trip_date);
 create index if not exists idx_bookings_trip_student on bookings(trip_id, student_id);
+
+-- Daily student commute requests. Apply this section after the base schema
+-- (or rerun this whole file) to upgrade an existing installation safely.
+alter table public.profiles
+  add column if not exists parent_phone text,
+  add column if not exists home_region text,
+  add column if not exists university_id uuid references public.universities(id);
+
+create unique index if not exists idx_universities_company_name
+  on public.universities(company_id, name);
+
+insert into public.universities (company_id, name, city)
+select c.id, u.name, 'المنصورة'
+from public.companies c
+cross join (values
+  ('جامعة الدلتا'),
+  ('جامعة المنصورة الأهلية'),
+  ('جامعة المنصورة الجديدة')
+) as u(name)
+where c.code = 'moveflow'
+on conflict (company_id, name) do nothing;
+
+create table if not exists public.daily_signup_settings (
+  company_id uuid primary key references public.companies(id) on delete cascade,
+  cutoff_time time not null default '22:00',
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.departure_slots (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references public.companies(id) on delete cascade,
+  departure_time time not null,
+  label text not null,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  unique (company_id, departure_time)
+);
+
+create table if not exists public.daily_signups (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references public.companies(id) on delete cascade,
+  student_id uuid not null references public.profiles(id) on delete cascade,
+  service_date date not null,
+  departure_slot_id uuid not null references public.departure_slots(id),
+  status text not null default 'registered' check (status in ('registered', 'cancelled')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (student_id, service_date)
+);
+
+alter table public.daily_signup_settings enable row level security;
+alter table public.departure_slots enable row level security;
+alter table public.daily_signups enable row level security;
+
+drop policy if exists "daily_settings_admin_manage" on public.daily_signup_settings;
+create policy "daily_settings_admin_manage" on public.daily_signup_settings
+for all using (public.is_company_admin(company_id))
+with check (public.is_company_admin(company_id));
+
+drop policy if exists "departure_slots_member_read" on public.departure_slots;
+create policy "departure_slots_member_read" on public.departure_slots
+for select using (
+  public.current_company_id() = company_id
+  and (is_active or public.is_company_admin(company_id))
+);
+
+drop policy if exists "departure_slots_admin_manage" on public.departure_slots;
+create policy "departure_slots_admin_manage" on public.departure_slots
+for all using (public.is_company_admin(company_id))
+with check (public.is_company_admin(company_id));
+
+drop policy if exists "daily_signups_student_or_admin_read" on public.daily_signups;
+create policy "daily_signups_student_or_admin_read" on public.daily_signups
+for select using (
+  student_id = auth.uid() or public.is_company_admin(company_id)
+);
+
+drop policy if exists "daily_signups_no_direct_insert" on public.daily_signups;
+create policy "daily_signups_no_direct_insert" on public.daily_signups
+for insert with check (false);
+
+drop policy if exists "daily_signups_no_direct_update" on public.daily_signups;
+create policy "daily_signups_no_direct_update" on public.daily_signups
+for update using (false) with check (false);
+
+drop policy if exists "daily_signups_no_direct_delete" on public.daily_signups;
+create policy "daily_signups_no_direct_delete" on public.daily_signups
+for delete using (false);
+
+insert into public.daily_signup_settings (company_id, cutoff_time)
+select id, '22:00'::time from public.companies where code = 'moveflow'
+on conflict (company_id) do nothing;
+
+insert into public.departure_slots (company_id, departure_time, label)
+select id, '07:00'::time, '7:00 صباحًا'
+from public.companies
+where code = 'moveflow'
+on conflict (company_id, departure_time) do nothing;
+
+create or replace function public.register_for_tomorrow(p_departure_slot_id uuid)
+returns public.daily_signups
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_profile public.profiles%rowtype;
+  v_signup public.daily_signups%rowtype;
+  v_cutoff time;
+  v_now_local timestamp := timezone('Africa/Cairo', now());
+  v_service_date date := timezone('Africa/Cairo', now())::date + 1;
+begin
+  if auth.uid() is null then
+    raise exception 'يجب تسجيل الدخول أولاً';
+  end if;
+
+  select * into v_profile
+  from public.profiles
+  where id = auth.uid() and role = 'student';
+  if not found then
+    raise exception 'حساب الطالب غير موجود أو غير مفعل';
+  end if;
+
+  if v_profile.home_region is null or v_profile.university_id is null then
+    raise exception 'بيانات بلد الركوب والجامعة غير مكتملة؛ تواصل مع الإدارة';
+  end if;
+
+  select cutoff_time into v_cutoff
+  from public.daily_signup_settings
+  where company_id = v_profile.company_id;
+  v_cutoff := coalesce(v_cutoff, '22:00'::time);
+  if v_now_local::time >= v_cutoff then
+    raise exception 'انتهى موعد تسجيل مشوار الغد';
+  end if;
+
+  perform 1
+  from public.departure_slots
+  where id = p_departure_slot_id
+    and company_id = v_profile.company_id
+    and is_active;
+  if not found then
+    raise exception 'هذا الموعد غير متاح';
+  end if;
+
+  insert into public.daily_signups (company_id, student_id, service_date, departure_slot_id, status)
+  values (v_profile.company_id, auth.uid(), v_service_date, p_departure_slot_id, 'registered')
+  on conflict (student_id, service_date) do update
+  set departure_slot_id = excluded.departure_slot_id,
+      status = 'registered',
+      updated_at = now()
+  returning * into v_signup;
+
+  return v_signup;
+end;
+$$;
+
+create or replace function public.cancel_tomorrow_signup()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_cutoff time;
+  v_now_local timestamp := timezone('Africa/Cairo', now());
+  v_service_date date := timezone('Africa/Cairo', now())::date + 1;
+begin
+  if auth.uid() is null then
+    raise exception 'يجب تسجيل الدخول أولاً';
+  end if;
+
+  select cutoff_time into v_cutoff
+  from public.daily_signup_settings
+  where company_id = public.current_company_id();
+  v_cutoff := coalesce(v_cutoff, '22:00'::time);
+  if v_now_local::time >= v_cutoff then
+    raise exception 'انتهى موعد تعديل أو إلغاء تسجيل مشوار الغد';
+  end if;
+
+  update public.daily_signups
+  set status = 'cancelled', updated_at = now()
+  where student_id = auth.uid()
+    and service_date = v_service_date
+    and status = 'registered';
+  if not found then
+    raise exception 'لا يوجد تسجيل نشط لمشوار الغد';
+  end if;
+end;
+$$;
+
+revoke all on function public.register_for_tomorrow(uuid) from public;
+revoke all on function public.cancel_tomorrow_signup() from public;
+grant execute on function public.register_for_tomorrow(uuid) to authenticated;
+grant execute on function public.cancel_tomorrow_signup() to authenticated;
+
+create index if not exists idx_daily_signups_company_date_slot
+  on public.daily_signups(company_id, service_date, departure_slot_id)
+  where status = 'registered';

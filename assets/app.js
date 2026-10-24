@@ -10,6 +10,9 @@ const MOVEFLOW = {
     buses: [],
     drivers: [],
     profiles: [],
+    departureSlots: [],
+    dailySignups: [],
+    signupCutoff: '22:00',
     companyId: 'default-company',
     client: null
   },
@@ -23,6 +26,70 @@ const MOVEFLOW = {
 };
 
 const { supabaseUrl, supabaseAnonKey } = MOVEFLOW.config;
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[character]);
+}
+
+function cairoDateString(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Cairo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date);
+  const part = (type) => parts.find((item) => item.type === type)?.value;
+  return `${part('year')}-${part('month')}-${part('day')}`;
+}
+
+function nextCairoDate() {
+  const nextDate = new Date(`${cairoDateString()}T00:00:00Z`);
+  nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+  return nextDate.toISOString().slice(0, 10);
+}
+
+function formatArabicDate(dateString) {
+  const date = new Date(`${dateString}T12:00:00+02:00`);
+  return new Intl.DateTimeFormat('ar-EG', {
+    timeZone: 'Africa/Cairo',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }).format(date);
+}
+
+function formatArabicTime(timeString) {
+  if (!timeString) return '—';
+  const normalized = String(timeString).slice(0, 5);
+  const date = new Date(`1970-01-01T${normalized}:00Z`);
+  return new Intl.DateTimeFormat('ar-EG', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'UTC'
+  }).format(date);
+}
+
+function normalizePhone(phone) {
+  const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+  const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+  return String(phone || '')
+    .replace(/[٠-٩]/g, (digit) => String(arabicDigits.indexOf(digit)))
+    .replace(/[۰-۹]/g, (digit) => String(persianDigits.indexOf(digit)))
+    .replace(/\D/g, '');
+}
+
+function phoneLoginEmail(phone) {
+  const digits = normalizePhone(phone);
+  return `student-${digits}@moveflow.invalid`;
+}
 
 function showToast(message, type = 'success') {
   const container = document.getElementById('toast-container');
@@ -43,7 +110,7 @@ function showToast(message, type = 'success') {
     <i class="fa-solid ${cfg.icon} ${cfg.fg} text-xl mt-0.5"></i>
     <div class="flex-1">
       <h4 class="font-bold text-sm mb-1">${cfg.badge}</h4>
-      <p class="text-xs opacity-90 leading-relaxed">${message}</p>
+      <p class="text-xs opacity-90 leading-relaxed">${escapeHtml(message)}</p>
     </div>
     <button type="button" onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
   `;
@@ -131,31 +198,38 @@ async function loadReferenceData() {
   const client = MOVEFLOW.state.client;
   if (!client) return;
 
-  const [universities, regions, trips, bookings, profiles, buses, drivers] = await Promise.all([
-    client.from('universities').select('*').order('name', { ascending: true }),
-    client.from('regions').select('*').order('name', { ascending: true }),
-    client.from('trips').select('*').order('trip_date', { ascending: true }),
-    client.from('bookings').select('*').order('created_at', { ascending: false }),
-    client.from('profiles').select('*').order('full_name', { ascending: true }),
-    client.from('buses').select('*').order('plate_number', { ascending: true }),
-    client.from('drivers').select('*').order('name', { ascending: true })
+  const isAdmin = MOVEFLOW.state.currentRole === 'admin';
+  const serviceDate = nextCairoDate();
+
+  const profileQuery = client.from('profiles').select(
+    'id, company_id, role, full_name, phone, parent_phone, home_region, university_id'
+  ).order('full_name', { ascending: true });
+  if (!isAdmin) profileQuery.eq('id', MOVEFLOW.state.currentUser?.id);
+
+  const [universities, slots, signups, profiles, settings] = await Promise.all([
+    client.from('universities').select('id, name').order('name', { ascending: true }),
+    client.from('departure_slots').select('id, departure_time, label, is_active').order('departure_time', { ascending: true }),
+    client.from('daily_signups').select('id, student_id, service_date, departure_slot_id, status')
+      .eq('service_date', serviceDate).eq('status', 'registered'),
+    profileQuery,
+    isAdmin
+      ? client.from('daily_signup_settings').select('cutoff_time').maybeSingle()
+      : Promise.resolve({ data: null, error: null })
   ]);
 
-  const queryResults = [universities, regions, trips, bookings, profiles, buses, drivers];
+  const queryResults = [universities, slots, signups, profiles, settings];
   const failedQuery = queryResults.find((result) => result.error);
   if (failedQuery) {
     console.error('Supabase data load failed:', failedQuery.error);
-    showToast('فشل تحميل بيانات التشغيل من Supabase. تحقق من الجداول وسياسات RLS.', 'error');
+    showToast(`فشل تحميل البيانات: ${failedQuery.error.message}`, 'error');
     return;
   }
 
   MOVEFLOW.state.universities = universities.data;
-  MOVEFLOW.state.regions = regions.data;
-  MOVEFLOW.state.trips = trips.data;
-  MOVEFLOW.state.bookings = bookings.data;
+  MOVEFLOW.state.departureSlots = slots.data;
+  MOVEFLOW.state.dailySignups = signups.data;
   MOVEFLOW.state.profiles = profiles.data;
-  MOVEFLOW.state.buses = buses.data;
-  MOVEFLOW.state.drivers = drivers.data;
+  MOVEFLOW.state.signupCutoff = settings.data?.cutoff_time || '22:00';
 
   renderStudentTrips();
   renderAdminDashboard();
@@ -170,19 +244,21 @@ async function loginWithSupabase(role) {
     return;
   }
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) {
-    showToast('أدخل بريدًا إلكترونيًا صالحًا لحساب Supabase.', 'error');
-    return;
-  }
-
   if (!MOVEFLOW.state.client) {
     showToast('Supabase غير جاهز بعد. حاول مرة أخرى.', 'error');
     return;
   }
 
   try {
+    const loginEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)
+      ? identifier
+      : phoneLoginEmail(identifier);
+    if (loginEmail === 'student-@moveflow.invalid') {
+      showToast('أدخل البريد الإلكتروني أو رقم الهاتف المسجل لدى الإدارة.', 'error');
+      return;
+    }
     const { data: authData, error: authError } = await MOVEFLOW.state.client.auth.signInWithPassword({
-      email: identifier,
+      email: loginEmail,
       password
     });
     if (authError) throw authError;
@@ -190,7 +266,7 @@ async function loginWithSupabase(role) {
 
     const { data: profile, error: profileError } = await MOVEFLOW.state.client
       .from('profiles')
-      .select('id, company_id, role, full_name, phone')
+      .select('id, company_id, role, full_name, phone, parent_phone, home_region, university_id')
       .eq('id', authData.user.id)
       .single();
     if (profileError) throw profileError;
@@ -215,165 +291,230 @@ async function loginWithSupabase(role) {
 }
 
 function renderStudentTrips() {
-  const container = document.getElementById('student-trips-container');
-  if (!container) return;
+  const form = document.getElementById('student-signup-form');
+  if (!form) return;
 
-  const trips = MOVEFLOW.state.trips || [];
-  const bookedTripIds = (MOVEFLOW.state.bookings || [])
-    .filter((booking) => booking.student_id === MOVEFLOW.state.currentUser?.id && booking.status === 'confirmed')
-    .map((booking) => booking.trip_id);
+  const profile = MOVEFLOW.state.currentUser;
+  const university = MOVEFLOW.state.universities.find((item) => item.id === profile?.university_id);
+  const summary = document.getElementById('student-profile-summary');
+  summary.innerHTML = profile
+    ? `<strong>${escapeHtml(profile.full_name)}</strong> · ${escapeHtml(profile.home_region || 'البلد غير محدد')} · ${escapeHtml(university?.name || 'الجامعة غير محددة')}`
+    : 'بيانات حساب الطالب غير متاحة.';
 
-  if (!trips.length) {
-    container.innerHTML = '<div class="p-6 text-slate-500">لا توجد رحلات متاحة حاليًا.</div>';
-    return;
-  }
+  const serviceDate = nextCairoDate();
+  const title = document.getElementById('student-tomorrow-title');
+  if (title) title.textContent = `اختار ميعاد نزولك بكرة · ${formatArabicDate(serviceDate)}`;
 
-  container.innerHTML = trips.map((trip) => {
-    const isBooked = bookedTripIds.includes(trip.id);
-    const isFull = Number(trip.available_seats ?? trip.capacity ?? 0) <= 0;
-    const isClosed = trip.status === 'closed' || trip.is_booking_open === false;
+  const slots = MOVEFLOW.state.departureSlots.filter((slot) => slot.is_active);
+  const select = document.getElementById('departure-slot-select');
+  const currentSignup = MOVEFLOW.state.dailySignups.find((signup) =>
+    signup.student_id === profile?.id && signup.status === 'registered'
+  );
+  select.innerHTML = slots.length
+    ? `<option value="">اختار ميعاد التحرك</option>${slots.map((slot) =>
+      `<option value="${escapeHtml(slot.id)}" ${slot.id === currentSignup?.departure_slot_id ? 'selected' : ''}>${escapeHtml(slot.label || formatArabicTime(slot.departure_time))}</option>`
+    ).join('')}`
+    : '<option value="">لا توجد مواعيد متاحة حاليًا</option>';
+  select.disabled = slots.length === 0;
 
-    let badgeClass = 'bg-brand-50 text-brand-600 border-brand-100';
-    let badgeText = 'متاح للحجز';
-    let icon = 'fa-ticket';
+  const status = document.getElementById('student-signup-status');
+  const currentSlot = slots.find((slot) => slot.id === currentSignup?.departure_slot_id);
+  status.innerHTML = currentSignup
+    ? `<div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-800 font-bold">تم تسجيلك لبكرة في ميعاد ${escapeHtml(currentSlot?.label || formatArabicTime(currentSlot?.departure_time))}. تقدر تغيّر الميعاد قبل إغلاق التسجيل.<button id="cancel-tomorrow-signup" type="button" class="mr-3 text-rose-700 underline">إلغاء التسجيل</button></div>`
+    : '<div class="rounded-xl border border-brand-100 bg-brand-50 px-4 py-3 text-brand-800 font-semibold">لسه ما سجلتش ميعاد بكرة.</div>';
 
-    if (isBooked) {
-      badgeClass = 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      badgeText = 'محجوزة';
-      icon = 'fa-check';
-    } else if (isFull) {
-      badgeClass = 'bg-rose-100 text-rose-700 border-rose-200';
-      badgeText = 'مكتملة السعة';
-      icon = 'fa-ban';
-    } else if (isClosed) {
-      badgeClass = 'bg-slate-100 text-slate-600 border-slate-200';
-      badgeText = 'الحجز مغلق';
-      icon = 'fa-lock';
-    }
-
-    const availableSeats = Number(trip.available_seats ?? trip.capacity ?? 0);
-    const progress = Math.max(0, Math.min(100, ((Number(trip.capacity || 0) - availableSeats) / (Number(trip.capacity || 1) || 1)) * 100));
-    const buttonHtml = isBooked
-      ? `<button type="button" onclick="cancelBooking('${trip.id}')" class="w-full mt-4 py-3 rounded-xl font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors">إلغاء الحجز</button>`
-      : `<button type="button" onclick="handleBooking('${trip.id}')" class="w-full mt-4 py-3 rounded-xl font-bold text-white transition-all ${isFull || isClosed ? 'bg-slate-300 cursor-not-allowed' : 'bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 shadow-md shadow-brand-500/20 hover:-translate-y-0.5'}" ${isFull || isClosed ? 'disabled' : ''}>${isFull ? 'لا توجد مقاعد' : isClosed ? 'الحجز غير متاح' : 'تأكيد الحجز'}</button>`;
-
-    return `
-      <article class="trip-card bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
-        <div class="p-6 pb-4 border-b border-dashed border-slate-200 flex justify-between items-start">
-          <div>
-            <span class="text-xs font-bold text-slate-400 block mb-1">رقم الرحلة: ${trip.id || trip.trip_code || '—'}</span>
-            <h3 class="text-xl font-black text-slate-800">${trip.route_name || 'رحلة عامة'}</h3>
-          </div>
-          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${badgeClass}"><i class="fa-solid ${icon}"></i> ${badgeText}</span>
-        </div>
-        <div class="p-6 pt-5 flex-1 flex flex-col">
-          <div class="flex items-center gap-4 mb-6">
-            <div class="w-12 h-12 rounded-2xl ${trip.direction === 'عودة' ? 'bg-accent-50 text-accent-600' : 'bg-brand-50 text-brand-600'} flex items-center justify-center text-xl shadow-inner">
-              <i class="fa-solid ${trip.direction === 'عودة' ? 'fa-house-chimney' : 'fa-bus'}"></i>
-            </div>
-            <div>
-              <p class="text-sm font-bold text-slate-500 mb-0.5">اتجاه الرحلة / الوقت</p>
-              <p class="text-lg font-black text-slate-800 flex items-center gap-2">${trip.direction || 'ذهاب'} <i class="fa-solid fa-circle text-[6px] text-slate-300"></i> <span class="text-brand-600">${trip.departure_time || trip.time || '—'}</span></p>
-            </div>
-          </div>
-          <div class="mt-auto">
-            <div class="flex justify-between text-sm mb-2">
-              <span class="font-bold text-slate-500">حالة المقاعد</span>
-              <span class="font-black ${isFull ? 'text-rose-500' : 'text-slate-700'}">${Number(trip.booked ?? trip.occupied ?? 0)} <span class="text-slate-400 font-medium text-xs">من ${Number(trip.capacity || 0)}</span></span>
-            </div>
-            <div class="w-full bg-slate-100 rounded-full h-2 mb-2 overflow-hidden">
-              <div class="${progress > 80 ? 'bg-rose-500' : progress > 50 ? 'bg-amber-500' : 'bg-emerald-500'} h-full rounded-full transition-all duration-700" style="width: ${progress}%"></div>
-            </div>
-            ${buttonHtml}
-          </div>
-        </div>
-      </article>
-    `;
-  }).join('');
+  const cutoff = document.getElementById('student-signup-cutoff');
+  if (cutoff) cutoff.textContent = `التسجيل والتعديل متاحان حتى ${formatArabicTime(MOVEFLOW.state.signupCutoff)} بتوقيت القاهرة.`;
 }
 
-async function handleBooking(tripId) {
-  const trip = (MOVEFLOW.state.trips || []).find((item) => item.id === tripId);
-  if (!trip) {
-    showToast('الرحلة غير موجودة.', 'error');
+async function submitTomorrowSignup(event) {
+  event.preventDefault();
+  const slotId = document.getElementById('departure-slot-select')?.value;
+  if (!slotId) {
+    showToast('اختار ميعاد التحرك أولًا.', 'error');
     return;
   }
 
-  if (!MOVEFLOW.state.currentUser) {
-    showToast('يجب تسجيل الدخول أولاً.', 'error');
+  const { error } = await MOVEFLOW.state.client.rpc('register_for_tomorrow', {
+    p_departure_slot_id: slotId
+  });
+  if (error) {
+    console.error('Daily signup failed:', error);
+    showToast(error.message || 'تعذر تسجيل ميعادك.', 'error');
     return;
   }
 
-  const existing = (MOVEFLOW.state.bookings || []).find((b) => b.trip_id === tripId && b.student_id === MOVEFLOW.state.currentUser.id);
-  if (existing) {
-    showToast('لقد تم حجز هذه الرحلة من قبل.', 'error');
-    return;
-  }
-
-  try {
-    const { error } = await MOVEFLOW.state.client.rpc('create_booking', { p_trip_id: tripId });
-    if (error) throw error;
-
-    await loadReferenceData();
-    showToast('تم تأكيد الحجز بنجاح.', 'success');
-  } catch (error) {
-    console.error(error);
-    showToast(error.message || 'تعذر تنفيذ الحجز. تحقق من قاعدة البيانات والسياسات.', 'error');
-  }
+  await loadReferenceData();
+  showToast('اتسجل ميعادك لبكرة بنجاح.', 'success');
 }
 
-async function cancelBooking(tripId) {
-  if (!MOVEFLOW.state.currentUser) return;
-
-  try {
-    const { error } = await MOVEFLOW.state.client.rpc('cancel_booking', { p_trip_id: tripId });
-    if (error) throw error;
-
-    await loadReferenceData();
-    showToast('تم إلغاء الحجز بنجاح.', 'info');
-  } catch (error) {
-    console.error(error);
-    showToast(error.message || 'تعذر إلغاء الحجز.', 'error');
+async function cancelTomorrowSignup() {
+  const { error } = await MOVEFLOW.state.client.rpc('cancel_tomorrow_signup');
+  if (error) {
+    console.error('Daily signup cancellation failed:', error);
+    showToast(error.message || 'تعذر إلغاء التسجيل.', 'error');
+    return;
   }
+  await loadReferenceData();
+  showToast('تم إلغاء تسجيل مشوار بكرة.', 'info');
 }
 
 function renderAdminDashboard() {
-  if (!document.getElementById('admin-trips-table-body')) return;
+  if (!document.getElementById('tomorrow-signups-body')) return;
 
-  const bookingsCount = (MOVEFLOW.state.bookings || []).length;
-  const trips = MOVEFLOW.state.trips || [];
-  const totalSeats = trips.reduce((sum, trip) => sum + Number(trip.capacity || 0), 0);
-  const activeTrips = trips.filter((trip) => trip.status !== 'closed').length;
+  const activeSignups = MOVEFLOW.state.dailySignups.filter((signup) => signup.status === 'registered');
+  const activeSlots = MOVEFLOW.state.departureSlots.filter((slot) => slot.is_active);
+  document.getElementById('stat-tomorrow-signups').textContent = activeSignups.length;
+  document.getElementById('stat-active-slots').textContent = activeSlots.length;
+  document.getElementById('stat-students').textContent = MOVEFLOW.state.profiles.filter((profile) => profile.role === 'student').length;
 
-  document.getElementById('stat-bookings').textContent = bookingsCount;
-  document.getElementById('stat-buses').textContent = (MOVEFLOW.state.buses || []).length;
-  document.getElementById('stat-trips').textContent = activeTrips;
-  document.getElementById('stat-capacity').textContent = totalSeats;
+  const serviceDate = nextCairoDate();
+  document.getElementById('admin-service-date').textContent = `تسجيلات ${formatArabicDate(serviceDate)} · الإغلاق ${formatArabicTime(MOVEFLOW.state.signupCutoff)} بتوقيت القاهرة`;
+  document.getElementById('signup-cutoff-label').textContent = formatArabicTime(MOVEFLOW.state.signupCutoff);
 
-  const tableBody = document.getElementById('admin-trips-table-body');
-  tableBody.innerHTML = trips.map((trip) => {
-    const booked = Number(trip.booked || 0);
-    const capacity = Number(trip.capacity || 0);
-    const pct = capacity ? Math.min((booked / capacity) * 100, 100) : 0;
-    let statusClass = 'neutral';
-    if (trip.status === 'confirmed' || trip.status === 'مجدولة') statusClass = 'success';
-    if (trip.status === 'closed' || trip.status === 'مكتملة') statusClass = 'danger';
-    if (trip.status === 'pending') statusClass = 'warning';
+  const summary = document.getElementById('signup-summary');
+  summary.innerHTML = activeSlots.map((slot) => {
+    const signups = activeSignups.filter((signup) => signup.departure_slot_id === slot.id);
+    const groupCounts = new Map();
+    signups.forEach((signup) => {
+      const profile = MOVEFLOW.state.profiles.find((item) => item.id === signup.student_id);
+      const university = MOVEFLOW.state.universities.find((item) => item.id === profile?.university_id);
+      const name = university?.name || 'جامعة غير محددة';
+      const region = profile?.home_region || 'بلد غير محدد';
+      const key = `${name}\u0000${region}`;
+      groupCounts.set(key, (groupCounts.get(key) || 0) + 1);
+    });
+    const breakdown = [...groupCounts.entries()]
+      .map(([key, count]) => {
+        const [university, region] = key.split('\u0000');
+        return `${escapeHtml(university)} · ${escapeHtml(region)}: ${count}`;
+      })
+      .join(' · ') || 'لا توجد تسجيلات';
+    return `<article class="rounded-2xl border border-slate-200 bg-slate-50 p-4"><div class="flex items-center justify-between gap-3"><h3 class="font-black text-slate-900">${escapeHtml(slot.label || formatArabicTime(slot.departure_time))}</h3><span class="rounded-full bg-brand-100 px-3 py-1 text-sm font-black text-brand-700">${signups.length} طالب</span></div><p class="text-sm text-slate-600 mt-2">${breakdown}</p></article>`;
+  }).join('') || '<p class="text-slate-500">أضف مواعيد التحرك لبدء التسجيل.</p>';
 
-    return `
-      <tr class="border-b border-slate-200 hover:bg-slate-50">
-        <td class="px-4 py-3 font-bold text-slate-800">${trip.id || trip.trip_code || '—'}</td>
-        <td class="px-4 py-3">${trip.route_name || 'رحلة عامة'}</td>
-        <td class="px-4 py-3">${trip.direction || 'ذهاب'}</td>
-        <td class="px-4 py-3">${trip.departure_time || trip.time || '—'}</td>
-        <td class="px-4 py-3">${booked}/${capacity}</td>
-        <td class="px-4 py-3"><div class="w-28 bg-slate-100 rounded-full h-2"><div class="bg-brand-500 h-full rounded-full" style="width:${pct}%"></div></div></td>
-        <td class="px-4 py-3"><span class="status-pill ${statusClass}">${trip.status || 'مجدولة'}</span></td>
-      </tr>
-    `;
-  }).join('');
+  const rows = activeSignups.map((signup) => {
+    const profile = MOVEFLOW.state.profiles.find((item) => item.id === signup.student_id);
+    const university = MOVEFLOW.state.universities.find((item) => item.id === profile?.university_id);
+    const slot = MOVEFLOW.state.departureSlots.find((item) => item.id === signup.departure_slot_id);
+    return {
+      slotTime: slot?.departure_time || '99:99',
+      html: `<tr class="border-b border-slate-100 hover:bg-slate-50"><td class="px-4 py-3 font-bold">${escapeHtml(slot?.label || formatArabicTime(slot?.departure_time))}</td><td class="px-4 py-3">${escapeHtml(profile?.full_name || '—')}</td><td class="px-4 py-3" dir="ltr">${escapeHtml(profile?.phone || '—')}</td><td class="px-4 py-3" dir="ltr">${escapeHtml(profile?.parent_phone || '—')}</td><td class="px-4 py-3">${escapeHtml(profile?.home_region || '—')}</td><td class="px-4 py-3">${escapeHtml(university?.name || '—')}</td></tr>`
+    };
+  }).sort((a, b) => a.slotTime.localeCompare(b.slotTime));
+  document.getElementById('tomorrow-signups-body').innerHTML = rows.length
+    ? rows.map((row) => row.html).join('')
+    : '<tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">لا توجد تسجيلات لبكرة حتى الآن.</td></tr>';
+
+  const universitySelect = document.getElementById('new-student-university');
+  if (universitySelect) {
+    universitySelect.innerHTML = '<option value="">اختار الجامعة</option>' + MOVEFLOW.state.universities
+      .map((university) => `<option value="${escapeHtml(university.id)}">${escapeHtml(university.name)}</option>`)
+      .join('');
+  }
+
+  const slotsList = document.getElementById('departure-slots-list');
+  slotsList.innerHTML = MOVEFLOW.state.departureSlots.map((slot) => `
+    <div class="inline-flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-2 ${slot.is_active ? 'bg-white' : 'bg-slate-100 text-slate-500'}">
+      <span class="font-bold">${escapeHtml(slot.label || formatArabicTime(slot.departure_time))}</span>
+      <button type="button" data-toggle-slot="${escapeHtml(slot.id)}" data-active="${slot.is_active}" class="text-xs font-bold ${slot.is_active ? 'text-rose-600' : 'text-emerald-700'}">${slot.is_active ? 'إيقاف' : 'تفعيل'}</button>
+    </div>
+  `).join('') || '<p class="text-slate-500">لا توجد مواعيد بعد.</p>';
+
+  const cutoffInput = document.getElementById('signup-cutoff-time');
+  if (cutoffInput) cutoffInput.value = String(MOVEFLOW.state.signupCutoff).slice(0, 5);
 }
 
+async function createStudent(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const student = {
+    fullName: document.getElementById('new-student-name').value.trim(),
+    phone: document.getElementById('new-student-phone').value.trim(),
+    parentPhone: document.getElementById('new-student-parent-phone').value.trim(),
+    homeRegion: document.getElementById('new-student-region').value.trim(),
+    universityId: document.getElementById('new-student-university').value
+  };
+  if (normalizePhone(student.phone).length < 7 || normalizePhone(student.parentPhone).length < 7) {
+    showToast('راجع رقم الطالب ورقم ولي الأمر.', 'error');
+    return;
+  }
+
+  const { data, error } = await MOVEFLOW.state.client.functions.invoke('create-student', { body: student });
+  if (error) {
+    console.error('Student provisioning failed:', error);
+    showToast(error.message || 'تعذر إنشاء حساب الطالب. تحقق من إعداد Edge Function.', 'error');
+    return;
+  }
+
+  const credentials = document.getElementById('created-student-credentials');
+  credentials.classList.remove('hidden');
+  credentials.innerHTML = `<strong class="block text-emerald-900 mb-2">تم إنشاء حساب ${escapeHtml(data.fullName)}.</strong><span>اسم الدخول: <b dir="ltr">${escapeHtml(data.phone)}</b></span><br><span>كلمة المرور المؤقتة: <b dir="ltr">${escapeHtml(data.temporaryPassword)}</b></span><p class="text-xs mt-2">احتفظ بكلمة المرور وسلّمها للطالب؛ لن تظهر مرة أخرى.</p>`;
+  form.reset();
+  await loadReferenceData();
+  showToast('تم إنشاء حساب الطالب بنجاح.', 'success');
+}
+
+async function createDepartureSlot(event) {
+  event.preventDefault();
+  const input = document.getElementById('new-slot-time');
+  const departureTime = input.value;
+  if (!departureTime) return;
+
+  const { error } = await MOVEFLOW.state.client.from('departure_slots').insert({
+    company_id: MOVEFLOW.state.currentUser.company_id,
+    departure_time: departureTime,
+    label: formatArabicTime(departureTime),
+    is_active: true
+  });
+  if (error) {
+    console.error('Departure slot creation failed:', error);
+    showToast(error.code === '23505' ? 'الموعد ده موجود بالفعل.' : error.message, 'error');
+    return;
+  }
+  input.value = '';
+  await loadReferenceData();
+  showToast('تم إضافة ميعاد التحرك.', 'success');
+}
+
+async function toggleDepartureSlot(slotId, isActive) {
+  const { error } = await MOVEFLOW.state.client
+    .from('departure_slots')
+    .update({ is_active: !isActive })
+    .eq('id', slotId);
+  if (error) {
+    console.error('Departure slot update failed:', error);
+    showToast(error.message || 'تعذر تحديث الموعد.', 'error');
+    return;
+  }
+  await loadReferenceData();
+  showToast(isActive ? 'تم إيقاف الموعد.' : 'تم تفعيل الموعد.', 'success');
+}
+
+async function saveSignupCutoff(event) {
+  event.preventDefault();
+  const cutoffTime = document.getElementById('signup-cutoff-time').value;
+  if (!cutoffTime) {
+    showToast('حدد وقت إغلاق التسجيل.', 'error');
+    return;
+  }
+
+  const { error } = await MOVEFLOW.state.client.from('daily_signup_settings').upsert({
+    company_id: MOVEFLOW.state.currentUser.company_id,
+    cutoff_time: cutoffTime
+  });
+  if (error) {
+    console.error('Signup cutoff update failed:', error);
+    showToast(error.message || 'تعذر حفظ موعد إغلاق التسجيل.', 'error');
+    return;
+  }
+  await loadReferenceData();
+  showToast('تم حفظ موعد إغلاق التسجيل.', 'success');
+}
+
+function printTomorrowSignups() {
+  window.print();
+}
 async function initApp() {
   const ok = await initSupabaseClient();
   if (!ok) {
@@ -390,7 +531,7 @@ async function initApp() {
   if (sessionData.session) {
     const { data: profile, error } = await MOVEFLOW.state.client
       .from('profiles')
-      .select('id, company_id, role, full_name, phone')
+      .select('id, company_id, role, full_name, phone, parent_phone, home_region, university_id')
       .eq('id', sessionData.session.user.id)
       .single();
     if (error) {
@@ -425,6 +566,21 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('#logout-button').forEach((button) => {
     button.addEventListener('click', logout);
   });
+
+  document.getElementById('student-signup-form')?.addEventListener('submit', submitTomorrowSignup);
+  document.getElementById('student-signup-status')?.addEventListener('click', (event) => {
+    if (event.target.closest('#cancel-tomorrow-signup')) cancelTomorrowSignup();
+  });
+  document.getElementById('create-student-form')?.addEventListener('submit', createStudent);
+  document.getElementById('create-slot-form')?.addEventListener('submit', createDepartureSlot);
+  document.getElementById('signup-cutoff-form')?.addEventListener('submit', saveSignupCutoff);
+  document.getElementById('departure-slots-list')?.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-toggle-slot]');
+    if (button) {
+      toggleDepartureSlot(button.dataset.toggleSlot, button.dataset.active === 'true');
+    }
+  });
+  document.getElementById('print-signups')?.addEventListener('click', printTomorrowSignups);
 
   initApp();
 });

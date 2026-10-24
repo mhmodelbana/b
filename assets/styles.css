@@ -102,3 +102,19 @@ body {
 input, select, button, textarea {
   font: inherit;
 }
+
+@media print {
+  body { background: #fff !important; }
+  #toast-container, aside, header button, #student-management, #departure-slots,
+  #print-signups, #signup-cutoff-form { display: none !important; }
+  #admin-view, main, #tomorrow-signups {
+    display: block !important;
+    min-height: 0 !important;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+  #tomorrow-signups { overflow: visible !important; }
+  .table-scroll { overflow: visible !important; }
+  #tomorrow-signups table { width: 100%; }
+  #signup-summary { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}

@@ -30,9 +30,9 @@
 
         <div class="space-y-5">
           <label class="block">
-            <span class="block text-sm font-bold mb-2 text-slate-700">البريد الإلكتروني</span>
+            <span class="block text-sm font-bold mb-2 text-slate-700">رقم الموبايل أو البريد الإلكتروني</span>
             <div class="relative">
-              <input id="login-identifier" type="email" autocomplete="username" required class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-11" placeholder="أدخل بريد حسابك في Supabase" />
+              <input id="login-identifier" type="text" autocomplete="username" required class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-11" placeholder="أدخل رقم موبايلك أو بريدك الإلكتروني" />
               <i class="fa-regular fa-envelope absolute right-4 top-4 text-slate-400"></i>
             </div>
           </label>
@@ -95,16 +95,38 @@
     <main class="p-6 md:p-8">
       <div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <p class="text-sm font-bold text-brand-600">رحلات اليوم</p>
-          <h2 class="text-2xl font-black text-slate-900">الرحلات المتاحة للحجز</h2>
+          <p class="text-sm font-bold text-brand-600">تسجيل مشوار الغد</p>
+          <h2 id="student-tomorrow-title" class="text-2xl font-black text-slate-900">اختار ميعاد نزولك بكرة</h2>
         </div>
-        <div class="bg-white border border-slate-200 rounded-xl px-4 py-2.5 shadow-sm flex items-center gap-3">
-          <i class="fa-solid fa-calendar text-brand-500"></i>
-          <span class="text-sm font-bold text-slate-600">اليوم، 25 أكتوبر 2026</span>
+        <div id="student-profile-summary" class="bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm text-sm font-bold text-slate-600">
+          جاري تحميل بيانات حسابك...
         </div>
       </div>
 
-      <div id="student-trips-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+      <section class="max-w-3xl bg-white border border-slate-200 rounded-3xl shadow-soft p-6 md:p-8">
+        <div class="flex items-start gap-4 mb-6">
+          <div class="w-12 h-12 shrink-0 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-clock"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-black text-slate-900">ميعاد التحرك</h3>
+            <p class="text-slate-500 mt-1">بلد الركوب والجامعة مسجلين في حسابك؛ اختار الميعاد فقط.</p>
+          </div>
+        </div>
+        <div id="student-signup-status" class="mb-5"></div>
+        <form id="student-signup-form" class="flex flex-col sm:flex-row gap-3">
+          <label class="flex-1">
+            <span class="block text-sm font-bold mb-2 text-slate-700">المواعيد المتاحة لبكرة</span>
+            <select id="departure-slot-select" required class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <option value="">جاري تحميل المواعيد...</option>
+            </select>
+          </label>
+          <button type="submit" class="sm:self-end bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-xl font-bold transition-colors">
+            تسجيل الميعاد
+          </button>
+        </form>
+        <p id="student-signup-cutoff" class="text-xs text-slate-500 mt-4"></p>
+      </section>
     </main>
   </div>
 </body>

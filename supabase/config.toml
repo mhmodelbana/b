@@ -1,0 +1,2 @@
+[functions.create-student]
+verify_jwt = true

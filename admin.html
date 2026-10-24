@@ -32,11 +32,9 @@
         </div>
       </div>
       <nav class="p-4 space-y-2">
-        <a href="#" class="block rounded-xl bg-brand-600/15 text-white px-4 py-3 font-bold border border-brand-500/20">لوحة القيادة</a>
-        <a href="#" class="block rounded-xl text-slate-300 hover:bg-white/5 px-4 py-3 font-semibold">إدارة الرحلات</a>
-        <a href="#" class="block rounded-xl text-slate-300 hover:bg-white/5 px-4 py-3 font-semibold">الطلاب والحجوزات</a>
-        <a href="#" class="block rounded-xl text-slate-300 hover:bg-white/5 px-4 py-3 font-semibold">الأتوبيسات</a>
-        <a href="#" class="block rounded-xl text-slate-300 hover:bg-white/5 px-4 py-3 font-semibold">السائقين</a>
+        <a href="#tomorrow-signups" class="block rounded-xl bg-brand-600/15 text-white px-4 py-3 font-bold border border-brand-500/20">تسجيلات بكرة</a>
+        <a href="#student-management" class="block rounded-xl text-slate-300 hover:bg-white/5 px-4 py-3 font-semibold">إضافة طالب</a>
+        <a href="#departure-slots" class="block rounded-xl text-slate-300 hover:bg-white/5 px-4 py-3 font-semibold">مواعيد التحرك</a>
       </nav>
       <div class="p-4 mt-auto border-t border-white/10">
         <button id="logout-button" type="button" class="w-full rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-200 hover:text-red-400 py-3 font-bold transition-all">تسجيل الخروج</button>
@@ -46,87 +44,105 @@
     <main class="flex-1">
       <header class="bg-white border-b border-slate-200 px-8 py-5 flex justify-between items-center">
         <div>
-          <h1 class="text-2xl font-black text-slate-900">لوحة القيادة</h1>
-          <p class="text-sm text-slate-500">نظرة عامة على العمليات اليومية</p>
+          <h1 class="text-2xl font-black text-slate-900">تشغيل مشاوير بكرة</h1>
+          <p id="admin-service-date" class="text-sm text-slate-500">طلبات الطلاب حسب ميعاد التحرك</p>
         </div>
         <div class="flex items-center gap-3">
-          <div class="relative">
-            <input type="text" placeholder="بحث سريع" class="bg-slate-100 rounded-xl px-4 py-2.5 pr-10 text-sm outline-none ring-0 w-64" />
-            <i class="fa-solid fa-magnifying-glass absolute right-3 top-3 text-slate-400"></i>
-          </div>
+          <button id="print-signups" type="button" class="bg-slate-900 text-white px-4 py-2.5 rounded-xl font-bold"><i class="fa-solid fa-print ml-2"></i>طباعة الكشف</button>
         </div>
       </header>
 
       <div class="p-6 md:p-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
           <div class="metric-card relative bg-white rounded-2xl p-5 shadow-soft border border-slate-100">
-            <p class="text-sm font-bold text-slate-500 mb-2">إجمالي الحجوزات</p>
-            <h3 id="stat-bookings" class="text-3xl font-black">0</h3>
+            <p class="text-sm font-bold text-slate-500 mb-2">إجمالي تسجيلات بكرة</p>
+            <h3 id="stat-tomorrow-signups" class="text-3xl font-black">0</h3>
           </div>
           <div class="metric-card relative bg-white rounded-2xl p-5 shadow-soft border border-slate-100">
-            <p class="text-sm font-bold text-slate-500 mb-2">عدد الأتوبيسات</p>
-            <h3 id="stat-buses" class="text-3xl font-black">0</h3>
+            <p class="text-sm font-bold text-slate-500 mb-2">عدد المواعيد النشطة</p>
+            <h3 id="stat-active-slots" class="text-3xl font-black">0</h3>
           </div>
           <div class="metric-card relative bg-white rounded-2xl p-5 shadow-soft border border-slate-100">
-            <p class="text-sm font-bold text-slate-500 mb-2">رحلات اليوم</p>
-            <h3 id="stat-trips" class="text-3xl font-black">0</h3>
-          </div>
-          <div class="metric-card relative bg-white rounded-2xl p-5 shadow-soft border border-slate-100">
-            <p class="text-sm font-bold text-slate-500 mb-2">السعة الإجمالية</p>
-            <h3 id="stat-capacity" class="text-3xl font-black">0</h3>
+            <p class="text-sm font-bold text-slate-500 mb-2">طلاب الشركة</p>
+            <h3 id="stat-students" class="text-3xl font-black">0</h3>
           </div>
         </div>
 
-        <div class="bg-white rounded-3xl border border-slate-200 shadow-soft p-5 mb-8">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-black text-slate-900">إدارة التشغيل</h2>
-            <button type="button" class="bg-brand-600 text-white px-4 py-2 rounded-xl font-bold">إضافة رحلة جديدة</button>
+        <section id="tomorrow-signups" class="bg-white rounded-3xl border border-slate-200 shadow-soft overflow-hidden mb-8">
+          <div class="px-6 py-5 border-b border-slate-200">
+            <h2 class="text-xl font-black text-slate-900">كشف طلاب مشوار بكرة</h2>
+            <p class="text-sm text-slate-500 mt-1">العدد والأسماء مجمّعة حسب ميعاد التحرك، الجامعة، وبلد الركوب.</p>
           </div>
-          <div class="form-grid">
-            <label class="block">
-              <span class="block text-sm font-bold mb-2 text-slate-700">اسم الرحلة</span>
-              <input class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3" value="رحلة جامعة النيل" />
-            </label>
-            <label class="block">
-              <span class="block text-sm font-bold mb-2 text-slate-700">الاتجاه</span>
-              <select class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <option>ذهاب</option>
-                <option>عودة</option>
-              </select>
-            </label>
-            <label class="block">
-              <span class="block text-sm font-bold mb-2 text-slate-700">الوقت</span>
-              <input class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3" value="08:00" />
-            </label>
-            <label class="block">
-              <span class="block text-sm font-bold mb-2 text-slate-700">السعة</span>
-              <input class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3" value="40" />
-            </label>
-          </div>
-        </div>
-
-        <div class="bg-white rounded-3xl border border-slate-200 shadow-soft overflow-hidden">
-          <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-            <h2 class="text-xl font-black text-slate-900">قائمة الرحلات</h2>
-            <span class="text-sm text-slate-500">آخر تحديث: اليوم</span>
-          </div>
+          <div id="signup-summary" class="p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
           <div class="table-scroll">
             <table class="min-w-full text-sm">
               <thead class="bg-slate-50 text-slate-700">
                 <tr>
-                  <th class="px-4 py-3 text-right">#</th>
-                  <th class="px-4 py-3 text-right">اسم الرحلة</th>
-                  <th class="px-4 py-3 text-right">الاتجاه</th>
-                  <th class="px-4 py-3 text-right">الوقت</th>
-                  <th class="px-4 py-3 text-right">الحجوزات</th>
-                  <th class="px-4 py-3 text-right">التقدم</th>
-                  <th class="px-4 py-3 text-right">الحالة</th>
+                  <th class="px-4 py-3 text-right">ميعاد التحرك</th>
+                  <th class="px-4 py-3 text-right">اسم الطالب</th>
+                  <th class="px-4 py-3 text-right">رقم الطالب</th>
+                  <th class="px-4 py-3 text-right">رقم ولي الأمر</th>
+                  <th class="px-4 py-3 text-right">بلد الركوب</th>
+                  <th class="px-4 py-3 text-right">الجامعة</th>
                 </tr>
               </thead>
-              <tbody id="admin-trips-table-body"></tbody>
+              <tbody id="tomorrow-signups-body"></tbody>
             </table>
           </div>
-        </div>
+        </section>
+
+        <section id="student-management" class="bg-white rounded-3xl border border-slate-200 shadow-soft p-6 mb-8">
+          <h2 class="text-xl font-black text-slate-900 mb-1">إنشاء حساب طالب</h2>
+          <p class="text-sm text-slate-500 mb-5">الحسابات ينشئها المسؤول فقط. ستظهر كلمة المرور المؤقتة مرة واحدة بعد الإنشاء.</p>
+          <form id="create-student-form" class="form-grid">
+            <label class="block">
+              <span class="block text-sm font-bold mb-2">اسم الطالب</span>
+              <input id="new-student-name" required maxlength="120" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3" />
+            </label>
+            <label class="block">
+              <span class="block text-sm font-bold mb-2">رقم الطالب (للدخول)</span>
+              <input id="new-student-phone" required type="tel" maxlength="24" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3" />
+            </label>
+            <label class="block">
+              <span class="block text-sm font-bold mb-2">رقم ولي الأمر</span>
+              <input id="new-student-parent-phone" required type="tel" maxlength="24" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3" />
+            </label>
+            <label class="block">
+              <span class="block text-sm font-bold mb-2">بلد الركوب</span>
+              <input id="new-student-region" required maxlength="120" placeholder="أدخل البلد أو نقطة الركوب" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3" />
+            </label>
+            <label class="block">
+              <span class="block text-sm font-bold mb-2">الجامعة</span>
+              <select id="new-student-university" required class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <option value="">جاري تحميل الجامعات...</option>
+              </select>
+            </label>
+            <button type="submit" class="self-end bg-brand-600 hover:bg-brand-700 text-white px-5 py-3 rounded-xl font-bold">إنشاء الحساب</button>
+          </form>
+          <div id="created-student-credentials" class="hidden mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4"></div>
+        </section>
+
+        <section id="departure-slots" class="bg-white rounded-3xl border border-slate-200 shadow-soft p-6">
+          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
+            <div>
+              <h2 class="text-xl font-black text-slate-900">مواعيد التحرك</h2>
+              <p class="text-sm text-slate-500 mt-1">أضف مواعيد التسجيل أو أوقف موعدًا مؤقتًا.</p>
+            </div>
+            <form id="create-slot-form" class="flex gap-2">
+              <input id="new-slot-time" type="time" required class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2" aria-label="وقت التحرك" />
+              <button type="submit" class="bg-brand-600 text-white px-4 py-2 rounded-xl font-bold">إضافة موعد</button>
+            </form>
+          </div>
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+            <p class="text-sm text-slate-600">آخر موعد للتسجيل أو التعديل يوميًا: <strong id="signup-cutoff-label">10:00 مساءً</strong> بتوقيت القاهرة.</p>
+            <form id="signup-cutoff-form" class="flex items-center gap-2">
+              <label for="signup-cutoff-time" class="text-sm font-bold">تغيير الإغلاق:</label>
+              <input id="signup-cutoff-time" type="time" required class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+              <button type="submit" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white">حفظ</button>
+            </form>
+          </div>
+          <div id="departure-slots-list" class="flex flex-wrap gap-3"></div>
+        </section>
       </div>
     </main>
   </div>
