@@ -166,7 +166,12 @@ async function loginWithSupabase(role) {
   const password = document.getElementById('login-password')?.value?.trim();
 
   if (!identifier || !password) {
-    showToast('أدخل رقم الهاتف أو الهوية وكلمة المرور.', 'error');
+    showToast('أدخل البريد الإلكتروني وكلمة المرور.', 'error');
+    return;
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) {
+    showToast('أدخل بريدًا إلكترونيًا صالحًا لحساب Supabase.', 'error');
     return;
   }
 
@@ -177,7 +182,7 @@ async function loginWithSupabase(role) {
 
   try {
     const { data: authData, error: authError } = await MOVEFLOW.state.client.auth.signInWithPassword({
-      phone: identifier,
+      email: identifier,
       password
     });
     if (authError) throw authError;
@@ -201,7 +206,11 @@ async function loginWithSupabase(role) {
     showToast(`مرحباً، ${profile.full_name || 'المستخدم'}!`, 'success');
   } catch (error) {
     console.error('login failed', error);
-    showToast('فشل تسجيل الدخول. تأكد من وجود الحساب في Supabase وتهيئة RLS.', 'error');
+    if (error.message === 'Invalid login credentials') {
+      showToast('البريد الإلكتروني أو كلمة المرور غير صحيحة.', 'error');
+    } else {
+      showToast(error.message || 'فشل تسجيل الدخول. تحقق من إعدادات Supabase.', 'error');
+    }
   }
 }
 
