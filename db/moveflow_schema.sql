@@ -24,6 +24,45 @@ create table if not exists profiles (
   updated_at timestamptz not null default now()
 );
 
+-- Provision the supplied Supabase Auth user as the initial MoveFlow admin.
+-- The Auth user must already exist; this block never creates or changes a password.
+do $$
+declare
+  v_auth_user auth.users%rowtype;
+  v_company_id uuid;
+begin
+  select * into v_auth_user
+  from auth.users
+  where id = '1567f98b-481a-4810-b624-f5ca47e882d7'::uuid;
+
+  if not found then
+    raise exception 'Create the Supabase Auth user 1567f98b-481a-4810-b624-f5ca47e882d7 before running this setup';
+  end if;
+
+  insert into companies (name, code)
+  values ('MoveFlow', 'moveflow')
+  on conflict (code) do update set name = excluded.name
+  returning id into v_company_id;
+
+  insert into profiles (id, company_id, role, full_name, phone)
+  values (
+    v_auth_user.id,
+    v_company_id,
+    'admin',
+    coalesce(nullif(v_auth_user.raw_user_meta_data ->> 'full_name', ''), 'MoveFlow Admin'),
+    v_auth_user.phone
+  )
+  on conflict (id) do update
+  set company_id = excluded.company_id,
+      role = 'admin',
+      full_name = case
+        when profiles.full_name = '' then excluded.full_name
+        else profiles.full_name
+      end,
+      phone = coalesce(profiles.phone, excluded.phone);
+end;
+$$;
+
 create table if not exists universities (
   id uuid primary key default gen_random_uuid(),
   company_id uuid not null references companies(id) on delete cascade,
